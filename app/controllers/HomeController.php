@@ -2,14 +2,18 @@
 
 class HomeController extends BaseController {
 
-  public function showWelcome()
+  public function getHome()
   {
-    return View::make('home');
+    $proceso = Proceso::take(10)->orderBy('created_at', 'desc')->get();
+    return View::make('home')->with('procesos', $proceso);
   }
 
   public function postProceso() {
     $fechaHoy = date('d/m/Y H:i:s');
-    if (Input::hasFile('archivo')) {
+    if (!Input::hasFile('archivo')) {
+      exit('No autorizado!');
+    }
+    try {
       $public_path = public_path();
       $carpeta = 'procesos';
       $extension = Input::file('archivo')->getClientOriginalExtension();
@@ -27,6 +31,9 @@ class HomeController extends BaseController {
         $rows = $reader->get();
         foreach($rows as $key => $row) { // recorrer las filas
           if ($contador == 1) {
+            if (trim($row['area_departamento']) == '' && trim($row['ges_grupo_de_exposicion_similar']) == '' && trim($row['trabajador']) == '') {
+              continue;
+            }
             $filaProceso[$fila]['igr_area'] = trim($row['area_departamento']);
             $filaProceso[$fila]['igr_ges'] = trim($row['ges_grupo_de_exposicion_similar']);
             $filaProceso[$fila]['igr_trabajador'] = trim($row['trabajador']);
@@ -56,6 +63,7 @@ class HomeController extends BaseController {
         $fila = 0;
         $contador = 1;
         $rows = $reader->get();
+        $totalFilas = count($filaProceso);
         foreach($rows as $key => $row) { // recorrer las filas
           if ($contador == 1) {
             $filaProceso[$fila]['cic_neqdbc'] = trim($row['neq_dba_cada_ciclo']);
@@ -74,8 +82,10 @@ class HomeController extends BaseController {
             $contador = 1;
             $fila++;
           }
+          if ($fila > $totalFilas) break;
         }
       });
+      array_pop($filaProceso);
       // grabar el proceso
       $proceso = new Proceso;
       $proceso->descripcion = $procesoDescripcion;
@@ -125,8 +135,28 @@ class HomeController extends BaseController {
         $procesoDetalle->save();
       }
       // cargar vista con resultados: $filas por ejemplo
-    } else {
-      echo 'No autorizado.';
+      $filas = count($filaProceso);
+      return View::make('resultados')->with('filas', $filas)->with('proceso', $procesoDescripcion);
+    } catch (Exception $e) {
+      $procesoDescripcion = Input::get('proceso', $fechaHoy);
+      $mensaje = $e->getMessage();
+      return View::make('error')->with('mensaje', $mensaje)->with('proceso', $procesoDescripcion);
     }
+  }
+
+  public function getHistorial() {
+    $proceso = Proceso::take(10)->orderBy('created_at', 'desc')->get();
+    return View::make('historial')->with('procesos', $proceso);
+  }
+
+  public function getHistorialById($idProceso) {
+    $proceso = Proceso::find($idProceso);
+    $archivo = $proceso->descripcion == '' ? 'archivo' : $proceso->descripcion;
+    $procesoDetalle = ProcesoDetalle::where('id_proceso', $idProceso)->select('igr_area', 'igr_ges', 'igr_trabajador', 'igr_fri', 'igr_ciclott', 'igr_neqdbc_1', 'igr_neqdbc_2', 'igr_neqdbc_3', 'igr_neqdbc_4', 'igr_neqdbc_5', 'igr_peakc_1', 'igr_peakc_2', 'igr_peakc_3', 'igr_peakc_4', 'igr_peakc_5', 'cic_neqdbc_1', 'cic_neqdbc_2', 'cic_neqdbc_3', 'cic_neqdbc_4', 'cic_neqdbc_5', 'cic_tm_1', 'cic_tm_2', 'cic_tm_3', 'cic_tm_4', 'cic_tm_5', 'cic_tej_1', 'cic_tej_2', 'cic_tej_3', 'cic_tej_4', 'cic_tej_5')->get();
+    Excel::create($archivo, function($excel) use($procesoDetalle) {
+      $excel->sheet('datos', function($sheet) use($procesoDetalle) {
+        $sheet->fromArray($procesoDetalle->toArray());
+      });
+    })->download('xlsx');
   }
 }
