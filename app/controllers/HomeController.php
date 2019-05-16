@@ -22,67 +22,72 @@ class HomeController extends BaseController {
       $archivoRuta = $public_path . '/' . $archivo;
       $procesoDescripcion = Input::get('proceso', $fechaHoy);
       $filaProceso = [];
-      // validar cantidad de filas, deben ser pares y multiplo de 5
-      // Excel::selectSheets('sheet1', 'sheet2')->load();
       // recorrer las filas de la hoja INGRESO
       Excel::selectSheets('INGRESO')->load($archivoRuta, function($reader) use(&$filaProceso) {
+        $flagPrimeraFila = true;
         $fila = 0;
         $contador = 1;
+        $reader->noHeading();
         $rows = $reader->get();
         foreach($rows as $key => $row) { // recorrer las filas
-          if ($contador == 1) {
-            if (trim($row['area_departamento']) == '' && trim($row['ges_grupo_de_exposicion_similar']) == '' && trim($row['trabajador']) == '') {
-              continue;
+          if (!$flagPrimeraFila) {
+            if ($contador == 1) {
+              $filaProceso[$fila]['igr_area'] = trim($row[1]);
+              $filaProceso[$fila]['igr_ges'] = trim($row[2]);
+              $filaProceso[$fila]['igr_trabajador'] = trim($row[5]);
+              $filaProceso[$fila]['igr_fri'] = trim($row[5]);
+              $filaProceso[$fila]['igr_ciclott'] = trim($row[19]);
+              $filaProceso[$fila]['igr_neqdbc'] = trim($row[21]);
+              $filaProceso[$fila]['igr_peakc'] = trim($row[22]);
+            } else {
+              if (trim($row[5]) != '')
+                $filaProceso[$fila]['igr_fri'] .= ' | ' . trim($row[5]);
+              if (trim($row[19]) != '')
+                $filaProceso[$fila]['igr_ciclott'] .= ' | ' . trim($row[19]);
+              if (trim($row[21]) != '')
+                $filaProceso[$fila]['igr_neqdbc'] .= '|' . trim($row[21]);
+              if (trim($row[22]) != '')
+                $filaProceso[$fila]['igr_peakc'] .= '|' . trim($row[22]);
             }
-            $filaProceso[$fila]['igr_area'] = trim($row['area_departamento']);
-            $filaProceso[$fila]['igr_ges'] = trim($row['ges_grupo_de_exposicion_similar']);
-            $filaProceso[$fila]['igr_trabajador'] = trim($row['trabajador']);
-            $filaProceso[$fila]['igr_fri'] = trim($row['fuentes_de_ruido_incidentes_y_estado']);
-            $filaProceso[$fila]['igr_ciclott'] = trim($row['ciclo_de_trabajo_o_tareas_incluidas_en_medicion']);
-            $filaProceso[$fila]['igr_neqdbc'] = trim($row['neq_dbc']);
-            $filaProceso[$fila]['igr_peakc'] = trim($row['peakc']);
-          } else {
-            if (trim($row['fuentes_de_ruido_incidentes_y_estado']) != '')
-              $filaProceso[$fila]['igr_fri'] .= ' | ' . trim($row['fuentes_de_ruido_incidentes_y_estado']);
-            if (trim($row['ciclo_de_trabajo_o_tareas_incluidas_en_medicion']) != '')
-              $filaProceso[$fila]['igr_ciclott'] .= ' | ' . trim($row['ciclo_de_trabajo_o_tareas_incluidas_en_medicion']);
-            if (trim($row['neq_dbc']) != '')
-              $filaProceso[$fila]['igr_neqdbc'] .= '|' . trim($row['neq_dbc']);
-            if (trim($row['peakc']) != '')
-              $filaProceso[$fila]['igr_peakc'] .= '|' . trim($row['peakc']);
+            $contador++;
+            if ($contador > 5) {
+              $contador = 1;
+              $fila++;
+            }
           }
-          $contador++;
-          if ($contador > 5) {
-            $contador = 1;
-            $fila++;
-          }
+          $flagPrimeraFila = false;
         }
       });
       // recorrer las filas de la hoja CICLOS
       Excel::selectSheets('CICLOS')->load($archivoRuta, function($reader) use(&$filaProceso) {
+        $flagPrimeraFila = true;
         $fila = 0;
         $contador = 1;
+        $reader->noHeading();
         $rows = $reader->get();
         $totalFilas = count($filaProceso);
         foreach($rows as $key => $row) { // recorrer las filas
-          if ($contador == 1) {
-            $filaProceso[$fila]['cic_neqdbc'] = trim($row['neq_dba_cada_ciclo']);
-            $filaProceso[$fila]['cic_tm'] = trim($row['tiempo_medicion_minutos']);
-            $filaProceso[$fila]['cic_tej'] = trim($row['tiempo_efectivo_por_jornada_horas']);
-          } else {
-            if (trim($row['neq_dba_cada_ciclo']) != '')
-              $filaProceso[$fila]['cic_neqdbc'] .= ' | ' . trim($row['neq_dba_cada_ciclo']);
-            if (trim($row['tiempo_medicion_minutos']) != '')
-              $filaProceso[$fila]['cic_tm'] .= ' | ' . trim($row['tiempo_medicion_minutos']);
-            if (trim($row['tiempo_efectivo_por_jornada_horas']) != '')
-              $filaProceso[$fila]['cic_tej'] .= '|' . trim($row['tiempo_efectivo_por_jornada_horas']);
+          if (!$flagPrimeraFila) {
+            if ($contador == 1) {
+              $filaProceso[$fila]['cic_neqdbc'] = trim($row[4]);
+              $filaProceso[$fila]['cic_tm'] = trim($row[5]);
+              $filaProceso[$fila]['cic_tej'] = trim($row[6]);
+            } else {
+              if (trim($row[4]) != '')
+                $filaProceso[$fila]['cic_neqdbc'] .= ' | ' . trim($row[4]);
+              if (trim($row[5]) != '')
+                $filaProceso[$fila]['cic_tm'] .= ' | ' . trim($row[5]);
+              if (trim($row[6]) != '')
+                $filaProceso[$fila]['cic_tej'] .= '|' . trim($row[6]);
+            }
+            $contador++;
+            if ($contador > 5) {
+              $contador = 1;
+              $fila++;
+            }
+            if ($fila > $totalFilas) break;
           }
-          $contador++;
-          if ($contador > 5) {
-            $contador = 1;
-            $fila++;
-          }
-          if ($fila > $totalFilas) break;
+          $flagPrimeraFila = false;
         }
       });
       array_pop($filaProceso);
