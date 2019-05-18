@@ -24,13 +24,15 @@ class HomeController extends BaseController {
       $filaProceso = [];
       // recorrer las filas de la hoja INGRESO
       Excel::selectSheets('INGRESO')->load($archivoRuta, function($reader) use(&$filaProceso) {
-        $flagPrimeraFila = true;
+        $hayDatos = false;
         $fila = 0;
         $contador = 1;
         $reader->noHeading();
         $rows = $reader->get();
         foreach($rows as $key => $row) { // recorrer las filas
-          if (!$flagPrimeraFila) {
+          $primeraCelda = trim($row[0]);
+          if ($primeraCelda != '' && $fila == 0) $hayDatos = true;
+          if ($hayDatos) {
             if ($contador == 1) {
               $filaProceso[$fila]['igr_area'] = trim($row[1]);
               $filaProceso[$fila]['igr_ges'] = trim($row[2]);
@@ -55,19 +57,22 @@ class HomeController extends BaseController {
               $fila++;
             }
           }
-          $flagPrimeraFila = false;
         }
       });
       // recorrer las filas de la hoja CICLOS
       Excel::selectSheets('CICLOS')->load($archivoRuta, function($reader) use(&$filaProceso) {
-        $flagPrimeraFila = true;
+        $cuenta = 0;
         $fila = 0;
         $contador = 1;
         $reader->noHeading();
         $rows = $reader->get();
         $totalFilas = count($filaProceso);
         foreach($rows as $key => $row) { // recorrer las filas
-          if (!$flagPrimeraFila) {
+          $primeraCelda = trim($row[0]);
+          if ($primeraCelda != '') {
+            $cuenta++;
+          }
+          if ($cuenta >= 2) {
             if ($contador == 1) {
               $filaProceso[$fila]['cic_neqdbc'] = trim($row[4]);
               $filaProceso[$fila]['cic_tm'] = trim($row[5]);
@@ -87,10 +92,8 @@ class HomeController extends BaseController {
             }
             if ($fila > $totalFilas) break;
           }
-          $flagPrimeraFila = false;
         }
       });
-      array_pop($filaProceso);
       // grabar el proceso
       $proceso = new Proceso;
       $proceso->descripcion = $procesoDescripcion;
@@ -164,4 +167,10 @@ class HomeController extends BaseController {
       });
     })->download('xlsx');
   }
+
+  public function getOnline() {
+    $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
+    return View::make('consolidado')->with('procesos', $procesoDetalle);
+  }
+
 }
