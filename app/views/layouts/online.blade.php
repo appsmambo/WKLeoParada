@@ -12,6 +12,7 @@
       <div class="card">
         <div class="card-header">
           <a href="{{ url('/') }}">Inicio</a> > Lista consolidada
+          <a href="{{ url('descargarConsolidado') }}" class="float-right">Descargar</a>
         </div>
         <div class="card-body">
           @yield('content')

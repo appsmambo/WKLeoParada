@@ -21,7 +21,6 @@
     <td class="text-right">
       <a href="{{ url('getHistorial/'.$proceso->id) }}"><i class="fas fa-download"></i></a>
       &nbsp;
-      <a href="{{ url('borrarProceso/'.$proceso->id) }}" class="text-danger"><i class="fas fa-trash-alt"></i></a>
     </td>
   </tr>
 @empty

@@ -35,7 +35,7 @@
       <td>{{ $proceso->cic_tej_1 }}</td>
     </tr>
     @elseif ($i == 2)
-    @if (trim($proceso->igr_neqdbc_2) != '' || trim($proceso->igr_peakc_2) != '' || trim($proceso->cic_neqdbc_2) != '' || trim($proceso->cic_tm_2) != '' || trim($proceso->cic_tej_2) != '')
+    @if ($proceso->igr_neqdbc_2 > 0 || $proceso->igr_peakc_2 > 0 || $proceso->cic_neqdbc_2 > 0 || $proceso->cic_tm_2 > 0 || $proceso->cic_tej_2 > 0)
     <tr>
       <td>&nbsp;</td>
       <td>&nbsp;</td>
@@ -51,7 +51,7 @@
     </tr>
     @endif
     @elseif ($i == 3)
-    @if (trim($proceso->igr_neqdbc_3) != '' || trim($proceso->igr_peakc_3) != '' || trim($proceso->cic_neqdbc_3) != '' || trim($proceso->cic_tm_3) != '' || trim($proceso->cic_tej_3) != '')
+    @if ($proceso->igr_neqdbc_3 > 0 || $proceso->igr_peakc_3 > 0 || $proceso->cic_neqdbc_3 > 0 || $proceso->cic_tm_3 > 0 || $proceso->cic_tej_3 > 0)
     <tr>
       <td>&nbsp;</td>
       <td>&nbsp;</td>
@@ -67,7 +67,7 @@
     </tr>
     @endif
     @elseif ($i == 4)
-    @if (trim($proceso->igr_neqdbc_4) != '' || trim($proceso->igr_peakc_4) != '' || trim($proceso->cic_neqdbc_4) != '' || trim($proceso->cic_tm_4) != '' || trim($proceso->cic_tej_4) != '')
+    @if ($proceso->igr_neqdbc_4 > 0 || $proceso->igr_peakc_4 > 0 || $proceso->cic_neqdbc_4 > 0 || $proceso->cic_tm_4 > 0 || $proceso->cic_tej_4 > 0)
     <tr>
       <td>&nbsp;</td>
       <td>&nbsp;</td>
@@ -83,7 +83,7 @@
     </tr>
     @endif
     @elseif ($i == 5)
-    @if (trim($proceso->igr_neqdbc_5) != '' || trim($proceso->igr_peakc_5) != '' || trim($proceso->cic_neqdbc_5) != '' || trim($proceso->cic_tm_5) != '' || trim($proceso->cic_tej_5) != '')
+    @if ($proceso->igr_neqdbc_5 > 0 || $proceso->igr_peakc_5 > 0 || $proceso->cic_neqdbc_5 > 0 || $proceso->cic_tm_5 > 0 || $proceso->cic_tej_5 > 0)
     <tr>
       <td>&nbsp;</td>
       <td>&nbsp;</td>

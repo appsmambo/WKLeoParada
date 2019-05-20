@@ -37,13 +37,13 @@ class HomeController extends BaseController {
               $filaProceso[$fila]['igr_area'] = trim($row[1]);
               $filaProceso[$fila]['igr_ges'] = trim($row[2]);
               $filaProceso[$fila]['igr_trabajador'] = trim($row[5]);
-              $filaProceso[$fila]['igr_fri'] = trim($row[5]);
+              $filaProceso[$fila]['igr_fri'] = trim($row[12]);
               $filaProceso[$fila]['igr_ciclott'] = trim($row[19]);
               $filaProceso[$fila]['igr_neqdbc'] = trim($row[21]);
               $filaProceso[$fila]['igr_peakc'] = trim($row[22]);
             } else {
-              if (trim($row[5]) != '')
-                $filaProceso[$fila]['igr_fri'] .= ' | ' . trim($row[5]);
+              if (trim($row[12]) != '')
+                $filaProceso[$fila]['igr_fri'] .= ' | ' . trim($row[12]);
               if (trim($row[19]) != '')
                 $filaProceso[$fila]['igr_ciclott'] .= ' | ' . trim($row[19]);
               if (trim($row[21]) != '')
@@ -171,6 +171,14 @@ class HomeController extends BaseController {
   public function getOnline() {
     $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
     return View::make('consolidado')->with('procesos', $procesoDetalle);
+  }
+
+  public function getConsolidado() {
+    $archivo = 'consolidado_'.date('dMY').'.xlsx';
+    $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
+    Excel::create($archivo, function($excel) use($procesoDetalle) {
+      //
+    })->download('xlsx');
   }
 
 }
