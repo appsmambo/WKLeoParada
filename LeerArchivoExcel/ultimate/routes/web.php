@@ -10,8 +10,10 @@ Route::get('historial', array('uses' => 'HomeController@getHistorial'));
 Route::get('getHistorial/{idProceso}', array('uses' => 'HomeController@getHistorialById'));
 // ver el consolidado
 Route::get('consolidado', array('uses' => 'HomeController@getOnline'));
-// descargar el consolidado
+// descargar el consolidado excel
 Route::get('descargarConsolidado', array('uses' => 'HomeController@getConsolidado'));
+// descargar el consolidado pdf
+Route::get('descargarConsolidadoPDF', array('uses' => 'HomeController@getConsolidadoPDF'));
 
 // ruta para el upload
 Route::group(array('before' => 'csrf'), function()

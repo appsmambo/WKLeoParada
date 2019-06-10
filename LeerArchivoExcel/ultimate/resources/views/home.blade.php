@@ -4,7 +4,7 @@
   <li class="nav-item">
     <a class="nav-link active" id="subir-tab" data-toggle="tab" href="#subir" role="tab" aria-controls="subir" aria-selected="true">Subir</a>
   </li>
-  <li class="nav-item">
+  <li class="nav-item" style="display:none">
     <a class="nav-link" id="historial-tab" data-toggle="tab" href="#historial" role="tab" aria-controls="historial" aria-selected="false">Historial</a>
   </li>
 </ul>
@@ -23,30 +23,30 @@
       <button type="submit" class="btn btn-primary">Ejecutar</button>
     </form>
   </div>
-  <div class="tab-pane fade" id="historial" role="tabpanel" aria-labelledby="historial-tab">
-  <table id="procesos" class="table table-striped table-bordered" style="width:100%">
-    <thead>
-      <tr>
-        <th>Proceso</th>
-        <th>Fecha</th>
-        <th>&nbsp;</th>
-      </tr>
-    </thead>
-    <tbody>
-    @forelse($procesos as $proceso)
-      <tr>
-        <td>{{ $proceso->descripcion }}</td>
-        <td>{{ $proceso->created_at }}</td>
-        <td class="text-right">
-          <a href="{{ url('getHistorial/'.$proceso->id) }}"><i class="fas fa-download"></i></a>
-          &nbsp;
-        </td>
-      </tr>
-    @empty
-      <tr><td colspan="3">No se encontraron procesos.</td></tr>
-    @endforelse
-    </tbody>
-  </table>
+  <div class="tab-pane fade" id="historial" role="tabpanel" aria-labelledby="historial-tab" style="display:none">
+    <table id="procesos" class="table table-striped table-bordered" style="width:100%">
+      <thead>
+        <tr>
+          <th>Proceso</th>
+          <th>Fecha</th>
+          <th>&nbsp;</th>
+        </tr>
+      </thead>
+      <tbody>
+      @forelse($procesos as $proceso)
+        <tr>
+          <td>{{ $proceso->descripcion }}</td>
+          <td>{{ $proceso->created_at }}</td>
+          <td class="text-right">
+            <a href="{{ url('getHistorial/'.$proceso->id) }}"><i class="fas fa-download"></i></a>
+            &nbsp;
+          </td>
+        </tr>
+      @empty
+        <tr><td colspan="3">No se encontraron procesos.</td></tr>
+      @endforelse
+      </tbody>
+    </table>
   </div>
 </div>
 @endsection

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Proceso;
+use App\ProcesoDetalle;
 use App\Imports\ProcesosImport;
-use App\Imports\CiclosImport;
+use App\Exports\ProcesosExport;
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
+use PDF;
 
 class HomeController extends Controller
 {
@@ -39,108 +41,94 @@ class HomeController extends Controller
       // variable tipo array para almacenar la data del archivo y su posterior manejo en la base de datos
       $filaProceso = [];
 
-      
-      $array = Excel::toArray(new ProcesosImport, $archivoRuta);
-      echo '<pre>';
-      print_r($array);
-      echo '</pre>';return;
+      // obtener todas las filas del archivo
+      $arrProceso = Excel::toArray(new ProcesosImport, $archivoRuta);
+      // separar las hojas
+      $arrIngreso = $arrProceso[0];
+      $arrCiclos = $arrProceso[1];
 
-
-
-
-      // leer el archivo y
-      // recorrer las filas de la hoja INGRESO, enviar el array para su uso
-      Excel::selectSheets('INGRESO')->load($archivoRuta, function($reader) use(&$filaProceso) {
-        // flag para detectar presencia de datos/encabezados
-        $hayDatos = false;
-        $fila = 0;
-        $contador = 1;
-        // desactivar la lectura automática de encabezados
-        $reader->noHeading();
-        // obtener las filas
-        $rows = $reader->get();
-        // recorrer las filas
-        foreach($rows as $key => $row) {
-          $primeraCelda = trim($row[0]);
-          if ($primeraCelda != '' && $fila == 0) $hayDatos = true;
-          if ($hayDatos) {
-            // escribir el array según la estructura de la hoja
-            if ($contador == 1) {
-              // este grupo de datos representa
-              // la primera fila de datos
-              $filaProceso[$fila]['igr_area'] = trim($row[1]);
-              $filaProceso[$fila]['igr_ges'] = trim($row[2]);
-              $filaProceso[$fila]['igr_trabajador'] = trim($row[5]);
-              $filaProceso[$fila]['igr_fri'] = trim($row[12]);
-              $filaProceso[$fila]['igr_ciclott'] = trim($row[19]);
-              $filaProceso[$fila]['igr_neqdbc'] = trim($row[21]);
-              $filaProceso[$fila]['igr_peakc'] = trim($row[22]);
-            } else {
-              // este grupo de datos representa
-              // las siguientes filas de datos y 
-              // se concatenan en el array con el caracter |
-              if (trim($row[12]) != '')
-                $filaProceso[$fila]['igr_fri'] .= ' | ' . trim($row[12]);
-              if (trim($row[19]) != '')
-                $filaProceso[$fila]['igr_ciclott'] .= ' | ' . trim($row[19]);
-              if (trim($row[21]) != '')
-                $filaProceso[$fila]['igr_neqdbc'] .= '|' . trim($row[21]);
-              if (trim($row[22]) != '')
-                $filaProceso[$fila]['igr_peakc'] .= '|' . trim($row[22]);
-            }
-            $contador++;
-            if ($contador > 5) {
-              $contador = 1;
-              $fila++;
-            }
+      // iniciar variables
+      // flag para detectar presencia de datos/encabezados
+      $hayDatos = false;
+      $fila = 0;
+      $contador = 1;
+      // recorrer las filas de la hoja INGRESO
+      foreach($arrIngreso as $key => $row) {
+        $primeraCelda = trim($row[0]);
+        if ($primeraCelda != '' && $fila == 0) $hayDatos = true;
+        if ($hayDatos) {
+          // escribir el array según la estructura de la hoja
+          if ($contador == 1) {
+            // este grupo de datos representa
+            // la primera fila de datos
+            $filaProceso[$fila]['igr_area'] = trim($row[1]);
+            $filaProceso[$fila]['igr_ges'] = trim($row[2]);
+            $filaProceso[$fila]['igr_trabajador'] = trim($row[5]);
+            $filaProceso[$fila]['igr_fri'] = trim($row[12]);
+            $filaProceso[$fila]['igr_ciclott'] = trim($row[19]);
+            $filaProceso[$fila]['igr_neqdbc'] = trim($row[21]);
+            $filaProceso[$fila]['igr_peakc'] = trim($row[22]);
+          } else {
+            // este grupo de datos representa
+            // las siguientes filas de datos y 
+            // se concatenan en el array con el caracter |
+            if (trim($row[12]) != '')
+              $filaProceso[$fila]['igr_fri'] .= ' | ' . trim($row[12]);
+            if (trim($row[19]) != '')
+              $filaProceso[$fila]['igr_ciclott'] .= ' | ' . trim($row[19]);
+            if (trim($row[21]) != '')
+              $filaProceso[$fila]['igr_neqdbc'] .= '|' . trim($row[21]);
+            if (trim($row[22]) != '')
+              $filaProceso[$fila]['igr_peakc'] .= '|' . trim($row[22]);
+          }
+          $contador++;
+          if ($contador > 5) {
+            $contador = 1;
+            $fila++;
           }
         }
-      });
+      }
+
+      // iniciar variables
+      $cuenta = 0;
+      $fila = 0;
+      $contador = 1;
+      // cantidad de filas de la primera hoja para evitar filas adicionales
+      $totalFilas = count($filaProceso);
       // recorrer las filas de la hoja CICLOS
-      Excel::selectSheets('CICLOS')->load($archivoRuta, function($reader) use(&$filaProceso) {
-        $cuenta = 0;
-        $fila = 0;
-        $contador = 1;
-        // desactivar la lectura automática de encabezados
-        $reader->noHeading();
-        // obtener las filas
-        $rows = $reader->get();
-        // cantidad de filas de la primera hoja para evitar filas adicionales
-        $totalFilas = count($filaProceso);
-        // recorrer las filas
-        foreach($rows as $key => $row) {
-          $primeraCelda = trim($row[0]);
-          if ($primeraCelda != '') {
-            $cuenta++;
-          }
-          if ($cuenta >= 2) {
-            // escribir el array según la estructura de la hoja
-            if ($contador == 1) {
-              // este grupo de datos representa
-              // la primera fila de datos
-              $filaProceso[$fila]['cic_neqdbc'] = trim($row[4]);
-              $filaProceso[$fila]['cic_tm'] = trim($row[5]);
-              $filaProceso[$fila]['cic_tej'] = trim($row[6]);
-            } else {
-              // este grupo de datos representa
-              // las siguientes filas de datos y 
-              // se concatenan en el array con el caracter |
-              if (trim($row[4]) != '')
-                $filaProceso[$fila]['cic_neqdbc'] .= ' | ' . trim($row[4]);
-              if (trim($row[5]) != '')
-                $filaProceso[$fila]['cic_tm'] .= ' | ' . trim($row[5]);
-              if (trim($row[6]) != '')
-                $filaProceso[$fila]['cic_tej'] .= '|' . trim($row[6]);
-            }
-            $contador++;
-            if ($contador > 5) {
-              $contador = 1;
-              $fila++;
-            }
-            if ($fila > $totalFilas) break;
-          }
+      foreach($arrCiclos as $key => $row) {
+        $primeraCelda = trim($row[0]);
+        if ($primeraCelda != '') {
+          $cuenta++;
         }
-      });
+        if ($cuenta >= 2) {
+          // escribir el array según la estructura de la hoja
+          if ($contador == 1) {
+            // este grupo de datos representa
+            // la primera fila de datos
+            $filaProceso[$fila]['cic_neqdbc'] = trim($row[4]);
+            $filaProceso[$fila]['cic_tm'] = trim($row[5]);
+            $filaProceso[$fila]['cic_tej'] = trim($row[6]);
+          } else {
+            // este grupo de datos representa
+            // las siguientes filas de datos y 
+            // se concatenan en el array con el caracter |
+            if (trim($row[4]) != '')
+              $filaProceso[$fila]['cic_neqdbc'] .= ' | ' . trim($row[4]);
+            if (trim($row[5]) != '')
+              $filaProceso[$fila]['cic_tm'] .= ' | ' . trim($row[5]);
+            if (trim($row[6]) != '')
+              $filaProceso[$fila]['cic_tej'] .= '|' . trim($row[6]);
+          }
+          $contador++;
+          if ($contador > 5) {
+            $contador = 1;
+            $fila++;
+          }
+          if ($fila > $totalFilas) break;
+        }
+      }
+
       // grabar el proceso en la base de datos
       $proceso = new Proceso;
       $proceso->descripcion = $procesoDescripcion;
@@ -165,61 +153,53 @@ class HomeController extends Controller
         // se almacenan en los campos de base de datos
         // siempre que esten presentes 'isset'
         $igr_neqdbc = explode('|', $detalle['igr_neqdbc']);
-        $procesoDetalle->igr_neqdbc_1 = $igr_neqdbc[0];
-        $procesoDetalle->igr_neqdbc_2 = isset($igr_neqdbc[1]) ? $igr_neqdbc[1] : 0;
-        $procesoDetalle->igr_neqdbc_3 = isset($igr_neqdbc[2]) ? $igr_neqdbc[2] : 0;
-        $procesoDetalle->igr_neqdbc_4 = isset($igr_neqdbc[3]) ? $igr_neqdbc[3] : 0;
-        $procesoDetalle->igr_neqdbc_5 = isset($igr_neqdbc[4]) ? $igr_neqdbc[4] : 0;
+        $procesoDetalle->igr_neqdbc_1 = isset($igr_neqdbc[0]) && $igr_neqdbc[0] != null ? $igr_neqdbc[0] : 0;
+        $procesoDetalle->igr_neqdbc_2 = isset($igr_neqdbc[1]) && $igr_neqdbc[1] != null ? $igr_neqdbc[1] : 0;
+        $procesoDetalle->igr_neqdbc_3 = isset($igr_neqdbc[2]) && $igr_neqdbc[2] != null ? $igr_neqdbc[2] : 0;
+        $procesoDetalle->igr_neqdbc_4 = isset($igr_neqdbc[3]) && $igr_neqdbc[3] != null ? $igr_neqdbc[3] : 0;
+        $procesoDetalle->igr_neqdbc_5 = isset($igr_neqdbc[4]) && $igr_neqdbc[4] != null ? $igr_neqdbc[4] : 0;
         $igr_peakc = explode('|', $detalle['igr_peakc']);
-        $procesoDetalle->igr_peakc_1 = $igr_peakc[0];
-        $procesoDetalle->igr_peakc_2 = isset($igr_peakc[1]) ? $igr_peakc[1] : 0;
-        $procesoDetalle->igr_peakc_3 = isset($igr_peakc[2]) ? $igr_peakc[2] : 0;
-        $procesoDetalle->igr_peakc_4 = isset($igr_peakc[3]) ? $igr_peakc[3] : 0;
-        $procesoDetalle->igr_peakc_5 = isset($igr_peakc[4]) ? $igr_peakc[4] : 0;
+        $procesoDetalle->igr_peakc_1 = isset($igr_peakc[0]) && $igr_peakc[0] != null ? $igr_peakc[0] : 0;
+        $procesoDetalle->igr_peakc_2 = isset($igr_peakc[1]) && $igr_peakc[1] != null ? $igr_peakc[1] : 0;
+        $procesoDetalle->igr_peakc_3 = isset($igr_peakc[2]) && $igr_peakc[2] != null ? $igr_peakc[2] : 0;
+        $procesoDetalle->igr_peakc_4 = isset($igr_peakc[3]) && $igr_peakc[3] != null ? $igr_peakc[3] : 0;
+        $procesoDetalle->igr_peakc_5 = isset($igr_peakc[4]) && $igr_peakc[4] != null ? $igr_peakc[4] : 0;
         $cic_neqdbc = explode('|', $detalle['cic_neqdbc']);
-        $procesoDetalle->cic_neqdbc_1 = $cic_neqdbc[0];
-        $procesoDetalle->cic_neqdbc_2 = isset($cic_neqdbc[1]) ? $cic_neqdbc[1] : 0;
-        $procesoDetalle->cic_neqdbc_3 = isset($cic_neqdbc[2]) ? $cic_neqdbc[2] : 0;
-        $procesoDetalle->cic_neqdbc_4 = isset($cic_neqdbc[3]) ? $cic_neqdbc[3] : 0;
-        $procesoDetalle->cic_neqdbc_5 = isset($cic_neqdbc[4]) ? $cic_neqdbc[4] : 0;
+        $procesoDetalle->cic_neqdbc_1 = isset($cic_neqdbc[0]) && $cic_neqdbc[0] != null ? $cic_neqdbc[0] : 0;
+        $procesoDetalle->cic_neqdbc_2 = isset($cic_neqdbc[1]) && $cic_neqdbc[1] != null ? $cic_neqdbc[1] : 0;
+        $procesoDetalle->cic_neqdbc_3 = isset($cic_neqdbc[2]) && $cic_neqdbc[2] != null ? $cic_neqdbc[2] : 0;
+        $procesoDetalle->cic_neqdbc_4 = isset($cic_neqdbc[3]) && $cic_neqdbc[3] != null ? $cic_neqdbc[3] : 0;
+        $procesoDetalle->cic_neqdbc_5 = isset($cic_neqdbc[4]) && $cic_neqdbc[4] != null ? $cic_neqdbc[4] : 0;
         $cic_tm = explode('|', $detalle['cic_tm']);
-        $procesoDetalle->cic_tm_1 = $cic_tm[0];
-        $procesoDetalle->cic_tm_2 = isset($cic_tm[1]) ? $cic_tm[1] : 0;
-        $procesoDetalle->cic_tm_3 = isset($cic_tm[2]) ? $cic_tm[2] : 0;
-        $procesoDetalle->cic_tm_4 = isset($cic_tm[3]) ? $cic_tm[3] : 0;
-        $procesoDetalle->cic_tm_5 = isset($cic_tm[4]) ? $cic_tm[4] : 0;
+        $procesoDetalle->cic_tm_1 = isset($cic_tm[0]) && $cic_tm[0] != null ? $cic_tm[0] : 0;
+        $procesoDetalle->cic_tm_2 = isset($cic_tm[1]) && $cic_tm[1] != null ? $cic_tm[1] : 0;
+        $procesoDetalle->cic_tm_3 = isset($cic_tm[2]) && $cic_tm[2] != null ? $cic_tm[2] : 0;
+        $procesoDetalle->cic_tm_4 = isset($cic_tm[3]) && $cic_tm[3] != null ? $cic_tm[3] : 0;
+        $procesoDetalle->cic_tm_5 = isset($cic_tm[4]) && $cic_tm[4] != null ? $cic_tm[4] : 0;
         $cic_tej = explode('|', $detalle['cic_tej']);
-        $procesoDetalle->cic_tej_1 = $cic_tej[0];
-        $procesoDetalle->cic_tej_2 = isset($cic_tej[1]) ? $cic_tej[1] : 0;
-        $procesoDetalle->cic_tej_3 = isset($cic_tej[2]) ? $cic_tej[2] : 0;
-        $procesoDetalle->cic_tej_4 = isset($cic_tej[3]) ? $cic_tej[3] : 0;
-        $procesoDetalle->cic_tej_5 = isset($cic_tej[4]) ? $cic_tej[4] : 0;
+        $procesoDetalle->cic_tej_1 = isset($cic_tej[0]) && $cic_tej[0] != null ? $cic_tej[0] : 0;
+        $procesoDetalle->cic_tej_2 = isset($cic_tej[1]) && $cic_tej[1] != null ? $cic_tej[1] : 0;
+        $procesoDetalle->cic_tej_3 = isset($cic_tej[2]) && $cic_tej[2] != null ? $cic_tej[2] : 0;
+        $procesoDetalle->cic_tej_4 = isset($cic_tej[3]) && $cic_tej[3] != null ? $cic_tej[3] : 0;
+        $procesoDetalle->cic_tej_5 = isset($cic_tej[4]) && $cic_tej[4] != null ? $cic_tej[4] : 0;
         // almacenar los registros de datos
         $procesoDetalle->save();
       }
       // cargar vista con resultados cantidad de filas procesadas
       $filas = count($filaProceso);
-      return View::make('resultados')->with('filas', $filas)->with('proceso', $procesoDescripcion);
+      return view('resultados')->with('filas', $filas)->with('proceso', $procesoDescripcion);
     } catch (Exception $e) {
       // si sucedió un error devolver el mensaje de error
       $procesoDescripcion = Input::get('proceso', $fechaHoy);
       $mensaje = $e->getMessage();
-      return View::make('error')->with('mensaje', $mensaje)->with('proceso', $procesoDescripcion);
+      return view('error')->with('mensaje', $mensaje)->with('proceso', $procesoDescripcion);
     }
   }
-}
-
-/*
-class HomeController extends BaseController {
-
-  
-
-  
 
   public function getHistorial() {
     // obtener la lista de últimos 10 procesos
     $proceso = Proceso::take(10)->orderBy('created_at', 'desc')->get();
-    return View::make('historial')->with('procesos', $proceso);
+    return view('historial')->with('procesos', $proceso);
   }
 
   public function getHistorialById($idProceso) {
@@ -238,10 +218,12 @@ class HomeController extends BaseController {
   public function getOnline() {
     // obtiene los datos para armar el consolidado
     $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
-    return View::make('consolidado')->with('procesos', $procesoDetalle);
+    return view('consolidado')->with('procesos', $procesoDetalle);
   }
 
   public function getConsolidado() {
+    return (new ProcesosExport)->download('consolidado.xlsx');
+    /*
     // obtiene el consolidado en archivo excel para la descarga
     $archivo = 'consolidado_'.date('dMY').'.xlsx';
     $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
@@ -340,7 +322,15 @@ class HomeController extends BaseController {
         $sheet->freezeFirstRow();
       });
     })->download('xlsx');
+    */
   }
-
+  public function getConsolidadoPDF(Request $request) {
+    $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
+    $request->session()->put('procesoDetalle', $procesoDetalle);
+    //print_r($procesoDetalle->toArray());exit;
+    //return view('pdf.consolidado')->with('procesos', $procesoDetalle);
+    $pdf = PDF::loadView('pdf.consolidado', $procesoDetalle->toArray());
+    $pdf->setPaper('A4', 'landscape');
+    return $pdf->download('consolidado.pdf');
+  }
 }
-*/

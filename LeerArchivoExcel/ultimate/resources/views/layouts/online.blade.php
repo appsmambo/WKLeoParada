@@ -12,7 +12,8 @@
       <div class="card">
         <div class="card-header">
           <a href="{{ url('/') }}">Inicio</a> > Lista consolidada
-          <a href="{{ url('descargarConsolidado') }}" class="float-right">Descargar</a>
+          <a href="{{ url('descargarConsolidado') }}" class="float-right btn btn-primary ml-1">Descargar excel <i class="fas fa-file-excel 2x"></i></a>
+          <a href="{{ url('descargarConsolidadoPDF') }}" class="float-right btn btn-primary ml-1">Descargar pdf <i class="fas fa-file-pdf 3x"></i></a>
         </div>
         <div class="card-body">
           @yield('content')
