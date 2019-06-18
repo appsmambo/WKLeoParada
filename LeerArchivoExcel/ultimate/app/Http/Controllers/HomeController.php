@@ -7,6 +7,7 @@ use App\Proceso;
 use App\ProcesoDetalle;
 use App\Imports\ProcesosImport;
 use App\Exports\ProcesosExport;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
 use PDF;
@@ -46,6 +47,7 @@ class HomeController extends Controller
       // separar las hojas
       $arrIngreso = $arrProceso[0];
       $arrCiclos = $arrProceso[1];
+      $arrIni = $arrProceso[2];
 
       // iniciar variables
       // flag para detectar presencia de datos/encabezados
@@ -134,6 +136,34 @@ class HomeController extends Controller
       $proceso->descripcion = $procesoDescripcion;
       $proceso->archivo = $archivo;
       $proceso->estado = 1;
+      // datos INI
+      $proceso->empresa = $arrIni[2][1];
+      $proceso->rut = $arrIni[3][4];
+      $proceso->adherente = $arrIni[3][1];
+      $proceso->act_economica = $arrIni[4][2];
+      $proceso->act_economica_cod = $arrIni[4][1];
+      $proceso->centro_trabajo = $arrIni[5][1];
+      $proceso->comuna = $arrIni[5][4];
+      $proceso->rep_legal = $arrIni[6][1];
+      $proceso->contacto_empresa = $arrIni[16][1];
+      $proceso->contacto_empresa_telefono = $arrIni[17][1];
+      $proceso->avance_obras = $arrIni[7][1];
+      $proceso->t1_horas = $arrIni[10][1];
+      $proceso->t1_dias = $arrIni[11][1];
+      $proceso->t1_jornada = intval($arrIni[10][1]) && intval($arrIni[11][1]) ? round(intval($arrIni[10][1]) / intval($arrIni[11][1]), 1) : 0;
+      $proceso->t2_horas = $arrIni[10][2];
+      $proceso->t2_dias = $arrIni[11][2];
+      $proceso->t2_jornada = intval($arrIni[10][2]) && intval($arrIni[11][2]) ? round(intval($arrIni[10][2]) / intval($arrIni[11][2]), 1) : 0;
+      $proceso->t3_horas = $arrIni[10][3];
+      $proceso->t3_dias = $arrIni[11][3];
+      $proceso->t3_jornada = intval($arrIni[10][3]) && intval($arrIni[11][3]) ? round(intval($arrIni[10][3]) / intval($arrIni[11][3]), 1) : 0;
+      $proceso->desc_sistema_turnos = $arrIni[14][1];
+      $proceso->visita_1 = $arrIni[19][1];
+      $proceso->visita_2 = $arrIni[19][2];
+      $proceso->visita_3 = $arrIni[19][3];
+      $proceso->visita_4 = $arrIni[19][4];
+      $proceso->profesional_medicion = $arrIni[23][2];
+      // FIN datos INI
       // almacenar el proceso
       $proceso->save();
       // obtener el id de proceso
@@ -223,107 +253,8 @@ class HomeController extends Controller
 
   public function getConsolidado() {
     return (new ProcesosExport)->download('consolidado.xlsx');
-    /*
-    // obtiene el consolidado en archivo excel para la descarga
-    $archivo = 'consolidado_'.date('dMY').'.xlsx';
-    $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
-    // variable tipo array para almacenar la data y escribir el archivo
-    $consolidado = [];
-    $fila = 0;
-    $registro = 1;
-    // primera fila con los encabezados de columnas
-    $consolidado[$fila][0] = '';
-    $consolidado[$fila][1] = 'ÁREA DEPARTAMENTO';
-    $consolidado[$fila][2] = 'GES Grupo de Exposición Similar';
-    $consolidado[$fila][3] = 'Trabajador';
-    $consolidado[$fila][4] = 'Fuentes de Ruido Incidentes (y estado)';
-    $consolidado[$fila][5] = 'Ciclo de Trabajo o Tareas incluidas en medición';
-    $consolidado[$fila][6] = 'Neq dBC';
-    $consolidado[$fila][7] = 'PeakC';
-    $consolidado[$fila][8] = 'Neq dBA Cada Ciclo';
-    $consolidado[$fila][9] = 'Tiempo Medición (minutos)';
-    $consolidado[$fila][10] = 'Tiempo Efectivo por jornada (horas)';
-    // recorrer los datos y armar la estructura del consolidado
-    foreach($procesoDetalle as $detalle) {
-      $fila++;
-      $consolidado[$fila][0] = $registro;
-      $consolidado[$fila][1] = $detalle['igr_area'];
-      $consolidado[$fila][2] = $detalle['igr_ges'];
-      $consolidado[$fila][3] = $detalle['igr_trabajador'];
-      $consolidado[$fila][4] = $detalle['igr_fri'];
-      $consolidado[$fila][5] = $detalle['igr_ciclott'];
-      $consolidado[$fila][6] = $detalle['igr_neqdbc_1'];
-      $consolidado[$fila][7] = $detalle['igr_peakc_1'];
-      $consolidado[$fila][8] = $detalle['cic_neqdbc_1'];
-      $consolidado[$fila][9] = $detalle['cic_tm_1'];
-      $consolidado[$fila][10] = $detalle['cic_tej_1'];
-      if ($detalle->igr_neqdbc_2 > 0 || $detalle->igr_peakc_2 > 0 || $detalle->cic_neqdbc_2 > 0 || $detalle->cic_tm_2 > 0 || $detalle->cic_tej_2 > 0) {
-        $fila++;
-        $consolidado[$fila][0] = '';
-        $consolidado[$fila][1] = '';
-        $consolidado[$fila][2] = '';
-        $consolidado[$fila][3] = '';
-        $consolidado[$fila][4] = '';
-        $consolidado[$fila][5] = '';
-        $consolidado[$fila][6] = $detalle['igr_neqdbc_2'];
-        $consolidado[$fila][7] = $detalle['igr_peakc_2'];
-        $consolidado[$fila][8] = $detalle['cic_neqdbc_2'];
-        $consolidado[$fila][9] = $detalle['cic_tm_2'];
-        $consolidado[$fila][10] = $detalle['cic_tej_2'];
-      }
-      if ($detalle->igr_neqdbc_3 > 0 || $detalle->igr_peakc_3 > 0 || $detalle->cic_neqdbc_3 > 0 || $detalle->cic_tm_3 > 0 || $detalle->cic_tej_3 > 0) {
-        $fila++;
-        $consolidado[$fila][0] = '';
-        $consolidado[$fila][1] = '';
-        $consolidado[$fila][2] = '';
-        $consolidado[$fila][3] = '';
-        $consolidado[$fila][4] = '';
-        $consolidado[$fila][5] = '';
-        $consolidado[$fila][6] = $detalle['igr_neqdbc_3'];
-        $consolidado[$fila][7] = $detalle['igr_peakc_3'];
-        $consolidado[$fila][8] = $detalle['cic_neqdbc_3'];
-        $consolidado[$fila][9] = $detalle['cic_tm_3'];
-        $consolidado[$fila][10] = $detalle['cic_tej_3'];
-      }
-      if ($detalle->igr_neqdbc_4 > 0 || $detalle->igr_peakc_4 > 0 || $detalle->cic_neqdbc_4 > 0 || $detalle->cic_tm_4 > 0 || $detalle->cic_tej_4 > 0) {
-        $fila++;
-        $consolidado[$fila][0] = '';
-        $consolidado[$fila][1] = '';
-        $consolidado[$fila][2] = '';
-        $consolidado[$fila][3] = '';
-        $consolidado[$fila][4] = '';
-        $consolidado[$fila][5] = '';
-        $consolidado[$fila][6] = $detalle['igr_neqdbc_4'];
-        $consolidado[$fila][7] = $detalle['igr_peakc_4'];
-        $consolidado[$fila][8] = $detalle['cic_neqdbc_4'];
-        $consolidado[$fila][9] = $detalle['cic_tm_4'];
-        $consolidado[$fila][10] = $detalle['cic_tej_4'];
-      }
-      if ($detalle->igr_neqdbc_5 > 0 || $detalle->igr_peakc_5 > 0 || $detalle->cic_neqdbc_5 > 0 || $detalle->cic_tm_5 > 0 || $detalle->cic_tej_5 > 0) {
-        $fila++;
-        $consolidado[$fila][0] = '';
-        $consolidado[$fila][1] = '';
-        $consolidado[$fila][2] = '';
-        $consolidado[$fila][3] = '';
-        $consolidado[$fila][4] = '';
-        $consolidado[$fila][5] = '';
-        $consolidado[$fila][6] = $detalle['igr_neqdbc_5'];
-        $consolidado[$fila][7] = $detalle['igr_peakc_5'];
-        $consolidado[$fila][8] = $detalle['cic_neqdbc_5'];
-        $consolidado[$fila][9] = $detalle['cic_tm_5'];
-        $consolidado[$fila][10] = $detalle['cic_tej_5'];
-      }
-      $registro++;
-    }
-    // declarar el archivo y descargar
-    Excel::create($archivo, function($excel) use($consolidado) {
-      $excel->sheet('Consolidado', function($sheet) use($consolidado) {
-        $sheet->fromArray($consolidado, null, 'A1', false, false);
-        $sheet->freezeFirstRow();
-      });
-    })->download('xlsx');
-    */
   }
+
   public function getConsolidadoPDF(Request $request) {
     $procesoDetalle = ProcesoDetalle::orderBy('created_at', 'DESC')->get();
     $request->session()->put('procesoDetalle', $procesoDetalle);
@@ -332,5 +263,11 @@ class HomeController extends Controller
     $pdf = PDF::loadView('pdf.consolidado', $procesoDetalle->toArray());
     $pdf->setPaper('A4', 'landscape');
     return $pdf->download('consolidado.pdf');
+  }
+
+  public function getReiniciarSistema() {
+    DB::table('proceso_detalle')->truncate();
+    DB::table('proceso')->truncate();
+    return redirect('/');
   }
 }

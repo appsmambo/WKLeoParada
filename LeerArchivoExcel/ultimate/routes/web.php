@@ -14,6 +14,8 @@ Route::get('consolidado', array('uses' => 'HomeController@getOnline'));
 Route::get('descargarConsolidado', array('uses' => 'HomeController@getConsolidado'));
 // descargar el consolidado pdf
 Route::get('descargarConsolidadoPDF', array('uses' => 'HomeController@getConsolidadoPDF'));
+// limpia la base de datos
+Route::get('reiniciar', array('uses' => 'HomeController@getReiniciarSistema'));
 
 // ruta para el upload
 Route::group(array('before' => 'csrf'), function()

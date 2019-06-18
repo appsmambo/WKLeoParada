@@ -102,7 +102,7 @@
   @endfor
 <?php $fila++ ?>
 @empty
-  <tr><td colspan="11">No se encontraron procesos.</td></tr>
+  <tr><td colspan="11">No se encontraron registros en el sistema.</td></tr>
 @endforelse
   </tbody>
 </table>
